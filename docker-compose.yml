@@ -14,10 +14,29 @@ services:
       - nextcloud_mariadb
     environment:
       - MYSQL_ADDR=nextcloud_mariadb
-      - MYSQL_PASSWORD=_ANHvphivkPOU_14Jbe9
+      - MYSQL_PASSWORD=<your keycloak mariadb password goes here>
       - PROXY_ADDRESS_FORWARDING=true
-      - VIRTUAL_HOST=keycloak.sid-owncloud
+      - VIRTUAL_HOST=keycloak.sid
       - VIRTUAL_PORT=8080
+    restart: always
+  collabora:
+    image: collabora/code
+    container_name: collabora
+    expose:
+      - 9980
+    extra_hosts:
+      - "nextcloud.sid: 192.168.0.185"
+    environment:
+      - domain=nextcloud\\.sid
+      - username=admin
+      - password=<your collabora admin password goes here>
+      - cert_domain=code.sid
+      - VIRTUAL_HOST=code.sid
+      - VIRTUAL_PORT=9980
+      - VIRTUAL_PROTO=https
+    cap_add:
+      - MKNOD
+    restart: always
   nginx:
     image: nginx
     container_name: nginx
@@ -28,15 +47,16 @@ services:
       - /opt/docker/nginx/conf.d:/etc/nginx/conf.d
       - /opt/docker/nginx/vhost.d:/etc/nginx/vhost.d:ro
       - /etc/ssl/nginx:/etc/nginx/certs
+      - /opt/docker/nginx/uploadsize.conf:/etc/nginx/conf.d/uploadsize.conf:ro
     restart: always
   dockergen:
     image: jwilder/docker-gen
     command: -notify-sighup nginx -watch /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
-    environment:
-      - DEFAULT_HOST=sid-owncloud
-      - HTTPS_METHOD=redirect
     volumes_from:
       - nginx
+    environment:
+      - DEFAULT_HOST=nextcloud.sid
+      - HTTPS_METHOD=redirect
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - /opt/docker/nginx/nginx.tmpl:/etc/docker-gen/templates/nginx.tmpl
@@ -47,8 +67,8 @@ services:
     volumes:
       - /opt/docker/mariadb:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=${replaceme}
-      - MYSQL_PASSWORD=${replaceme}
+      - MYSQL_ROOT_PASSWORD=<your root password goes here>
+      - MYSQL_PASSWORD=<your password goes here>
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
   nextcloud_mariadb_myadmin:
@@ -58,7 +78,7 @@ services:
     links:
       - nextcloud_mariadb:db
     environment:
-      - VIRTUAL_HOST=phpmyadmin.sid-owncloud
+      - VIRTUAL_HOST=phpmyadmin.sid
     restart: always
   nextcloud_app:
     image: nextcloud
@@ -66,10 +86,13 @@ services:
       - 80
     links:
       - nextcloud_mariadb
+    extra_hosts:
+      - "code.sid: 192.168.0.185"
     environment:
-      - VIRTUAL_HOST=sid-owncloud
+      - VIRTUAL_HOST=nextcloud.sid
+      - HSTS=max-age=15552000; includeSubDomains; strict-origin
     volumes:
-      - /srv/owncloud_data:/var/www/html/data
+      - /srv/nextcloud_data:/var/www/html/data
       - /opt/docker/nextcloud/config:/var/www/html/config
       - /opt/docker/nextcloud/themes:/var/www/html/themes
       - /opt/docker/nextcloud/custom_apps:/var/www/html/custom_apps

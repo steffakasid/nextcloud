@@ -22,14 +22,16 @@ First of all you should go through the files and check for password placeholder 
 
 I use the following directory structure:
 
-/
-- opt /
-    - docker /
-        - nextcloud / ...
-        - nginx / ...
-        - docker-compose.yml
-- srv /
-    - nextcloud-data / ...
+```
+|-/
+|- opt /
+|   |-docker /
+|       |- nextcloud / ...
+|       |- nginx / ...
+|       |- docker-compose.yml
+|- srv /
+|   |- nextcloud-data / ...
+ ```
 
 The srv directory is an extra mount point on my hosts with a 1 TB disk. Which is only used to store all nextcloud data. This directory is also backed up via rsnapshot and the host is monitored via nagios. For both I don't describe here how I did it. If you're interested in this drop me a message.
 
